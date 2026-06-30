@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Right Knee — 4 Week Block</title>
+<style>
+  :root{
+    --field:#212e29;
+    --field-dark:#19211d;
+    --chalk:#f2efe6;
+    --chalk-dim:#b9c2bb;
+    --tape:#d9542c;
+    --tape-dim:#7a3722;
+    --turf:#6f9c5e;
+    --amber:#d6a13c;
+    --line:#3a4a42;
+    --card:#283731;
+    --mono: 'SFMono-Regular', Consolas, 'Courier New', monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  body{
+    margin:0; background:var(--field); color:var(--chalk);
+    font-family:var(--sans); padding-bottom:60px;
+    min-height:100vh;
+  }
+  .scoreboard{
+    background:var(--field-dark);
+    border-bottom:3px solid var(--tape);
+    padding:18px 16px 14px;
+    position:sticky; top:0; z-index:10;
+  }
+  .sb-row{display:flex; justify-content:space-between; align-items:baseline;}
+  .sb-title{
+    font-weight:800; letter-spacing:0.5px; text-transform:uppercase;
+    font-size:15px; color:var(--chalk-dim);
+  }
+  .sb-num{
+    font-family:var(--mono); font-weight:700; font-size:13px; color:var(--tape);
+  }
+  h1{
+    font-size:26px; margin:6px 0 0; letter-spacing:-0.5px;
+    font-weight:800; text-transform:uppercase;
+  }
+  .sub{font-size:13px; color:var(--chalk-dim); margin-top:2px;}
+
+  .tape-nav{
+    display:flex; gap:6px; overflow-x:auto; padding:14px 16px 4px;
+    scrollbar-width:none;
+  }
+  .tape-nav::-webkit-scrollbar{display:none;}
+  .tape-tab{
+    flex:0 0 auto; background:var(--card); border:1px solid var(--line);
+    color:var(--chalk-dim); font-family:var(--mono); font-size:12px;
+    font-weight:700; padding:8px 13px; border-radius:3px; cursor:pointer;
+    white-space:nowrap;
+  }
+  .tape-tab.active{
+    background:var(--tape); border-color:var(--tape); color:#fff;
+  }
+
+  .wrap{padding:14px 16px 0;}
+  .day-strip{
+    display:flex; gap:6px; margin-bottom:16px; overflow-x:auto; padding-bottom:4px;
+    scrollbar-width:none;
+  }
+  .day-strip::-webkit-scrollbar{display:none;}
+  .day-chip{
+    flex:0 0 auto; width:42px; height:50px; border-radius:6px;
+    background:var(--card); border:1px solid var(--line);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    cursor:pointer; font-family:var(--mono);
+  }
+  .day-chip .d{font-size:9px; color:var(--chalk-dim);}
+  .day-chip .n{font-size:15px; font-weight:700;}
+  .day-chip.active{border-color:var(--tape); background:#33231c;}
+  .day-chip.done{background:var(--turf); border-color:var(--turf);}
+  .day-chip.done .n, .day-chip.done .d{color:#142016;}
+  .day-chip.recheck::after{
+    content:''; width:5px; height:5px; border-radius:50%;
+    background:var(--amber); margin-top:2px;
+  }
+
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:8px;
+    padding:16px; margin-bottom:14px;
+  }
+  .card-head{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;}
+  .card-head h2{font-size:16px; margin:0; font-weight:800; text-transform:uppercase; letter-spacing:0.3px;}
+  .badge{
+    font-family:var(--mono); font-size:10px; font-weight:700; padding:3px 7px;
+    border-radius:3px; text-transform:uppercase; letter-spacing:0.5px;
+  }
+  .badge.mobility{background:#2d3f56; color:#9bc1e8;}
+  .badge.load{background:#4a3322; color:var(--amber);}
+  .badge.run{background:#2f4530; color:var(--turf);}
+  .badge.recheck{background:#4a2a1d; color:var(--tape);}
+
+  .ex-row{
+    display:flex; align-items:flex-start; gap:10px; padding:9px 0;
+    border-top:1px solid var(--line);
+  }
+  .ex-row:first-of-type{border-top:none;}
+  .ex-check{
+    flex:0 0 auto; width:20px; height:20px; border-radius:4px;
+    border:2px solid var(--chalk-dim); margin-top:1px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .ex-check.checked{background:var(--turf); border-color:var(--turf);}
+  .ex-check.checked::after{content:'✓'; color:#142016; font-size:13px; font-weight:900;}
+  .ex-text{font-size:14px; line-height:1.4; color:var(--chalk);}
+  .ex-text.checked{color:var(--chalk-dim); text-decoration:line-through;}
+
+  .note-box{
+    background:#1c2622; border:1px solid var(--line); border-radius:6px;
+    padding:10px; font-size:13px; color:var(--chalk-dim); margin-top:6px;
+  }
+
+  label.field-label{
+    display:block; font-family:var(--mono); font-size:11px; font-weight:700;
+    text-transform:uppercase; letter-spacing:0.5px; color:var(--chalk-dim); margin-bottom:6px;
+  }
+  .pain-row{display:flex; gap:6px; margin-bottom:14px;}
+  .pain-btn{
+    flex:1; padding:9px 0; text-align:center; font-family:var(--mono); font-weight:700;
+    font-size:13px; border-radius:5px; border:1px solid var(--line); background:#1c2622;
+    color:var(--chalk-dim); cursor:pointer;
+  }
+  .pain-btn.sel-low{background:var(--turf); border-color:var(--turf); color:#142016;}
+  .pain-btn.sel-mid{background:var(--amber); border-color:var(--amber); color:#3a2a05;}
+  .pain-btn.sel-high{background:var(--tape); border-color:var(--tape); color:#fff;}
+
+  textarea, input[type=text], input[type=number]{
+    width:100%; background:#1c2622; border:1px solid var(--line); border-radius:6px;
+    color:var(--chalk); padding:10px; font-size:14px; font-family:var(--sans);
+    resize:vertical; margin-bottom:12px;
+  }
+  textarea:focus, input:focus{outline:1px solid var(--tape);}
+
+  .btn{
+    background:var(--tape); color:#fff; border:none; border-radius:6px;
+    padding:11px 0; width:100%; font-weight:700; font-size:14px;
+    text-transform:uppercase; letter-spacing:0.5px; cursor:pointer;
+  }
+  .btn.secondary{background:transparent; border:1px solid var(--line); color:var(--chalk-dim);}
+  .btn.small{width:auto; padding:8px 14px; font-size:12px;}
+
+  .flare-banner{
+    background:#4a231a; border:1px solid var(--tape); border-radius:8px;
+    padding:12px 14px; margin-bottom:14px; font-size:13px; color:#f4c9b5;
+  }
+  .flare-banner b{color:var(--tape);}
+
+  .stat-grid{display:flex; gap:10px; margin-bottom:14px;}
+  .stat{
+    flex:1; background:var(--card); border:1px solid var(--line); border-radius:8px;
+    padding:12px; text-align:center;
+  }
+  .stat .v{font-family:var(--mono); font-size:22px; font-weight:800; color:var(--tape);}
+  .stat .l{font-size:10px; color:var(--chalk-dim); text-transform:uppercase; letter-spacing:0.5px; margin-top:2px;}
+
+  .chart-wrap{padding:6px 2px 0;}
+  canvas{width:100%; display:block;}
+
+  .log-entry{
+    border-top:1px solid var(--line); padding:10px 0; font-size:13px;
+  }
+  .log-entry:first-child{border-top:none;}
+  .log-entry .meta{display:flex; justify-content:space-between; font-family:var(--mono); font-size:11px; color:var(--chalk-dim); margin-bottom:4px;}
+  .empty-state{text-align:center; padding:30px 10px; color:var(--chalk-dim); font-size:13px;}
+
+  .milestone{display:flex; align-items:center; gap:10px; padding:9px 0; border-top:1px solid var(--line); font-size:13px;}
+  .milestone:first-of-type{border-top:none;}
+  .milestone .dot{width:9px; height:9px; border-radius:50%; background:var(--line); flex:0 0 auto;}
+  .milestone .dot.met{background:var(--turf);}
+
+  .scale-bar{display:flex; gap:8px; margin-bottom:14px;}
+  .scale-btn{
+    flex:1; padding:10px 0; text-align:center; font-family:var(--mono); font-weight:700;
+    font-size:12px; text-transform:uppercase; letter-spacing:0.4px; border-radius:6px;
+    border:1px solid var(--line); background:#1c2622; color:var(--chalk-dim); cursor:pointer;
+  }
+  .scale-btn.active-easy{background:var(--amber); border-color:var(--amber); color:#3a2a05;}
+  .scale-btn.active-skip{background:var(--tape); border-color:var(--tape); color:#fff;}
+  .easy-banner{
+    background:#3a3320; border:1px solid var(--amber); border-radius:8px;
+    padding:12px 14px; margin-bottom:14px; font-size:13px; color:#ecd9a8;
+  }
+  .easy-banner b{color:var(--amber);}
+  .card.adjusted{border-color:var(--amber);}
+
+  .rom-row{display:flex; gap:10px; margin-bottom:12px;}
+  .rom-row > div{flex:1;}
+</style>
+</head>
+<body>
+
+<div class="scoreboard">
+  <div class="sb-row">
+    <div class="sb-title">Right Knee Rehab</div>
+    <div class="sb-num" id="todayLabel">—</div>
+  </div>
+  <h1>4 Week Block</h1>
+  <div class="sub">Hip control + ankle mobility + step-down/quad tolerance</div>
+  <div class="sub" id="saveBadge" style="margin-top:6px; font-family:var(--mono); font-size:11px;"></div>
+  <button class="btn secondary small" style="margin-top:10px;" onclick="switchView('log')">Quick Check-In (symptom only)</button>
+</div>
+
+<div class="tape-nav">
+  <div class="tape-tab" data-view="today">Today</div>
+  <div class="tape-tab" data-view="plan">Plan</div>
+  <div class="tape-tab" data-view="log">Log</div>
+  <div class="tape-tab" data-view="progress">Progress</div>
+  <div class="tape-tab" data-view="milestones">Milestones</div>
+</div>
+
+<div class="wrap" id="app"></div>
+
+<script>
+const START_DATE = new Date('2026-06-30T00:00:00');
+
+// Each exercise: {t: text, m: minutes (estimated)}
+const CORE = [ // included nearly every day — coach's exercises + ankle work, ~7.5 min
+  {t:'Ankle knee-to-wall — 3×10/side', m:1.5},
+  {t:'Box ankle stretch (coach)', m:1.5},
+  {t:'90/90 hip external rotation — 2–3×8/side (coach)', m:1.5},
+  {t:'Hamstring extension stretch (coach)', m:1.5},
+  {t:'Pigeon stretch (coach)', m:1.5},
+];
+const LIGHT_CORE = [ // lighter days still hit coach items, ~6 min
+  {t:'Box ankle stretch (coach)', m:1.5},
+  {t:'90/90 hip external rotation — 2–3×8/side (coach)', m:1.5},
+  {t:'Hamstring extension stretch (coach)', m:1.5},
+  {t:'Pigeon stretch (coach)', m:1.5},
+];
+
+const PLAN = [
+ // WEEK 1
+ {type:'mobility-load', ex:[...CORE,
+   {t:'Wall sit (60°) — 3×20–30s', m:2},
+   {t:'Step-downs (small height, pain-free range) — 3×5/side', m:2.5},
+   {t:'Side-lying hip abduction — 3×12/side', m:1.5},
+   {t:'Glute bridge — 3×12', m:1.5}],
+   cardio:'Cycling / flat walk only — no running, no hills (not counted in session time)'},
+ {type:'mobility', ex:[...LIGHT_CORE,
+   {t:'Ankle knee-to-wall — 3×10/side', m:1.5},
+   {t:'Side-lying hip abduction — 3×12/side', m:1.5},
+   {t:'Glute bridge — 3×12', m:1.5}], cardio:'Cycling / flat walk only'},
+ {type:'mobility-load', ex:[...CORE,
+   {t:'Wall sit (60°) — 3×20–30s', m:2},
+   {t:'Step-downs — 3×5/side', m:2.5},
+   {t:'Side plank — 3×20–30s/side', m:1.5}], cardio:'Cycling / flat walk only'},
+ {type:'mobility', ex:[...LIGHT_CORE,
+   {t:'Ankle knee-to-wall — 3×10/side', m:1.5},
+   {t:'Side-lying hip abduction — 3×12/side', m:1.5},
+   {t:'Glute bridge — 3×12', m:1.5}], cardio:'Cycling / flat walk only'},
+ {type:'mobility-load', ex:[...CORE,
+   {t:'Wall sit (60°) — 3×20–30s', m:2},
+   {t:'Step-downs — 3×5/side', m:2.5},
+   {t:'Side plank — 3×20–30s/side', m:1.5}], cardio:'Cycling / flat walk only'},
+ {type:'mobility', ex:[...LIGHT_CORE,
+   {t:'Ankle knee-to-wall — 3×10/side', m:1.5},
+   {t:'Side-lying hip abduction — 3×12/side', m:1.5},
+   {t:'Glute bridge — 3×12', m:1.5}], cardio:'Cycling / flat walk only'},
+ {type:'recheck', ex:[...CORE,
+   {t:'Wall sit (60°) — 3×20–30s', m:2},
+   {t:'Step-downs — 3×5/side', m:2.5}],
+   note:'Week 1 check-in: any soreness lasting beyond 24h? If symptoms are back to baseline, move to Week 2. If not, repeat Week 1 at the same loads.'},
+
+ // WEEK 2
+ {type:'load', ex:[...CORE,
+   {t:'Wall sit (~75°) — 3×30s', m:2},
+   {t:'Step-downs (slightly higher if pain-free) — 3×6–8/side', m:2.5},
+   {t:'Single-leg glute bridge — 3×8–10/side', m:2},
+   {t:'Side plank — 3×30–40s', m:1.5}],
+   cardio:'Cycling + optional easy flat jog 10–15min if knee is calm'},
+ {type:'mobility', ex:[...LIGHT_CORE,
+   {t:'Ankle knee-to-wall — 3×10/side', m:1.5},
+   {t:'Single-leg balance — 3×30s/side', m:1.5},
+   {t:'Single-leg glute bridge — 3×8–10/side', m:2},
+   {t:'Side-lying hip abduction w/ light band — 3×12/side', m:1.5}], cardio:'Cycling, easy flat jog optional'},
+ {type:'load', ex:[...CORE,
+   {t:'Wall sit (~75°) — 3×30s', m:2},
+   {t:'Step-downs — 3×6–8/side', m:2.5},
+   {t:'Single-leg balance — 3×30s/side', m:1.5}], cardio:'Cycling + easy flat jog if calm'},
+ {type:'mobility', ex:[...LIGHT_CORE,
+   {t:'Ankle knee-to-wall — 3×10/side', m:1.5},
+   {t:'Single-leg glute bridge — 3×8–10/side', m:2},
+   {t:'Single-leg balance — 3×30s/side', m:1.5}], cardio:'Cycling, easy flat jog optional'},
+ {type:'load', ex:[...CORE,
+   {t:'Wall sit (~75°) — 3×30s', m:2},
+   {t:'Step-downs — 3×6–8/side', m:2.5},
+   {t:'Side plank — 3×30–40s', m:1.5}], cardio:'Cycling + easy flat jog if calm'},
+ {type:'mobility', ex:[...LIGHT_CORE,
+   {t:'Ankle knee-to-wall — 3×10/side', m:1.5},
+   {t:'Single-leg glute bridge — 3×8–10/side', m:2},
+   {t:'Single-leg balance — 3×30s/side', m:1.5}], cardio:'Cycling, easy flat jog optional'},
+ {type:'recheck', ex:[...CORE,
+   {t:'Wall sit (~75°) — 3×30s', m:2},
+   {t:'Step-downs — 3×6–8/side', m:2.5}],
+   note:'Week 2 check-in: still calm 24h after sessions? Confirm before progressing to Week 3 single-leg loading.'},
+
+ // WEEK 3
+ {type:'load', ex:[...CORE,
+   {t:'Single-leg sit-to-stand — 3×5–6/side (watch hip drop / knee drift)', m:2.5},
+   {t:'Step-downs (near full height) — 3×8/side', m:3},
+   {t:'Lateral band walks — 2–3×10 steps/side', m:2}]},
+ {type:'run', ex:[...LIGHT_CORE,
+   {t:'Lateral band walks — 2–3×10/side', m:2},
+   {t:'Single-leg glute bridge — 3×8–10/side', m:2}],
+   cardio:'Flat run 20–25min (monitor 24h response) — not counted in session time'},
+ {type:'load', ex:[...CORE,
+   {t:'Single-leg sit-to-stand — 3×5–6/side, watch form', m:2.5},
+   {t:'Step-downs — 3×8/side', m:3},
+   {t:'Lateral band walks — 2–3×10/side', m:2}]},
+ {type:'run', ex:[...LIGHT_CORE,
+   {t:'Lateral band walks — 2–3×10/side', m:2},
+   {t:'Single-leg glute bridge — 3×8–10/side', m:2}],
+   cardio:'Flat run 20–25min if prior session felt fine'},
+ {type:'load', ex:[...CORE,
+   {t:'Single-leg sit-to-stand — 3×5–6/side, watch form', m:2.5},
+   {t:'Step-downs — 3×8/side', m:3},
+   {t:'Bulgarian split squats (reduced depth) — 3×6/side', m:2.5}]},
+ {type:'run', ex:[...LIGHT_CORE,
+   {t:'Lateral band walks — 2–3×10/side', m:2},
+   {t:'Single-leg glute bridge — 3×8–10/side', m:2}],
+   cardio:'Flat run 20–25min if tolerated'},
+ {type:'recheck', ex:[...CORE,
+   {t:'Single-leg sit-to-stand — 3×5–6/side', m:2.5},
+   {t:'Step-downs — 3×8/side', m:3}],
+   note:'Week 3 check-in: is form holding under load (no hip drop / knee drift)? If pain-free and controlled, move to Week 4.'},
+
+ // WEEK 4
+ {type:'load', ex:[...CORE,
+   {t:'Step-downs (full height) — 3×10/side, pain-free, controlled', m:3},
+   {t:'Single-leg squat (shallow) — 3×5/side, no knee drift', m:2.5},
+   {t:'Bulgarian split squats — progress depth if tolerated — 3×6/side', m:2.5}]},
+ {type:'run', ex:[...LIGHT_CORE,
+   {t:'Lateral band walks — 2–3×10/side', m:2},
+   {t:'Single-leg balance — 3×30s/side', m:1.5}],
+   cardio:'Incline brisk walking only — no jog/sprint yet'},
+ {type:'load', ex:[...CORE,
+   {t:'Patrick step-ups — 2×6/side, watch form closely (coach)', m:2.5},
+   {t:'Step-downs (full height) — 3×10/side', m:3}]},
+ {type:'run', ex:[...LIGHT_CORE,
+   {t:'Lateral band walks — 2–3×10/side', m:2},
+   {t:'Single-leg balance — 3×30s/side', m:1.5}],
+   cardio:'Incline brisk walking'},
+ {type:'load', ex:[...CORE,
+   {t:'Patrick step-ups — 2×6/side (coach)', m:2.5},
+   {t:'Step-downs (full height) — 3×10/side', m:3},
+   {t:'Single-leg squat — 3×5/side', m:2.5}],
+   note:'Film single-leg squat / step-down from the front to self-check for hip drop or knee valgus.'},
+ {type:'run', ex:[...LIGHT_CORE,
+   {t:'Lateral band walks — 2–3×10/side', m:2}],
+   cardio:'Incline brisk walking'},
+ {type:'recheck', ex:[...CORE,
+   {t:'Single-leg squat — 3×5/side, self-check', m:2.5}],
+   note:'Re-test ankle knee-to-wall (compare to baseline: 3.0in right / 4.25in left). Review: are single-leg sit-to-stand, step-downs, and Bulgarian split squats all pain-free and controlled? If milestones are met, begin hill jogging progression (Block 2). If not, repeat the Week 3–4 pattern. This is also the target window to have had an in-person PT eval.'},
+];
+
+const TYPE_LABEL = {mobility:'Mobility', load:'Load', run:'Run', recheck:'Re-check', 'mobility-load':'Mobility+Load'};
+
+let state = {checks:{}, pain:{}, notes:{}, romLog:[], quickLogs:[]};
+let currentDay = dayIndexForToday();
+let currentView = 'today';
+
+function dayIndexForToday(){
+  const now = new Date();
+  const diff = Math.floor((now - START_DATE) / 86400000);
+  return Math.min(Math.max(diff,0),27);
+}
+function dateForDay(i){
+  const d = new Date(START_DATE);
+  d.setDate(d.getDate()+i);
+  return d;
+}
+function fmtDate(d){
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
+function fmtDow(d){
+  return d.toLocaleDateString('en-US',{weekday:'short'}).toUpperCase();
+}
+function weekOf(i){ return Math.floor(i/7)+1; }
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem('rehab-state');
+    if(raw) state = JSON.parse(raw);
+  }catch(e){ console.error('load failed:', e.message || e); }
+  render();
+}
+let saveStatus = 'idle'; // idle | saved | error
+
+function saveState(){
+  saveStatus = 'saving';
+  updateSaveBadge();
+  try{
+    localStorage.setItem('rehab-state', JSON.stringify(state));
+    saveStatus = 'saved';
+  }catch(e){
+    console.error('save failed:', e.message || e);
+    saveStatus = 'error';
+  }
+  updateSaveBadge();
+}
+function updateSaveBadge(){
+  const el = document.getElementById('saveBadge');
+  if(!el) return;
+  if(saveStatus==='saving') el.innerHTML = '<span style="color:var(--chalk-dim);">Saving…</span>';
+  else if(saveStatus==='saved') el.innerHTML = '<span style="color:var(--turf);">Saved ✓ (stored on this device)</span>';
+  else if(saveStatus==='error') el.innerHTML = '<span style="color:var(--tape);">Save failed — your browser may be blocking local storage (e.g. Private Browsing mode)</span>';
+  else el.innerHTML = '';
+}
+
+// --- Manual backup/restore — still useful for moving data between devices ---
+function exportState(){
+  const code = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+  const el = document.getElementById('exportOut');
+  if(el){
+    el.value = code;
+    el.style.display = 'block';
+    el.select();
+  }
+}
+function importState(){
+  const el = document.getElementById('importIn');
+  if(!el || !el.value.trim()) return;
+  try{
+    const decoded = JSON.parse(decodeURIComponent(escape(atob(el.value.trim()))));
+    state = decoded;
+    saveState();
+    render();
+    alert('Progress restored.');
+  }catch(e){
+    alert('That code didn\'t look valid — double check you copied the whole thing.');
+  }
+}
+function copyTodaySummary(){
+  const i = currentDay;
+  const day = PLAN[i];
+  const date = dateForDay(i);
+  const pain = state.pain[i];
+  const notes = state.notes[i] || '';
+  const doneEx = day.ex.filter((e,idx)=>state.checks[i+'-'+idx]).map(e=>e.t);
+  const text = `Week ${weekOf(i)} Day ${(i%7)+1} — ${fmtDate(date)}\nCompleted: ${doneEx.join('; ')}\nSymptom level: ${pain!==undefined?pain+'/10':'not logged'}\nNotes: ${notes||'(none)'}`;
+  navigator.clipboard?.writeText(text).then(()=>{
+    alert('Copied — paste this into Claude chat if you want it logged there too.');
+  }).catch(()=>{
+    prompt('Copy this manually:', text);
+  });
+}
+
+function toggleCheck(dayIdx, exIdx){
+  const key = dayIdx+'-'+exIdx;
+  state.checks[key] = !state.checks[key];
+  saveState();
+  render();
+}
+function setPain(dayIdx, val){
+  state.pain[dayIdx] = val;
+  saveState();
+  render();
+}
+function setNote(dayIdx, val){
+  state.notes[dayIdx] = val;
+  saveState();
+}
+
+function painClass(v){
+  if(v===undefined||v===null) return '';
+  if(v<=3) return 'sel-low';
+  if(v<=6) return 'sel-mid';
+  return 'sel-high';
+}
+
+const HIGH_LOAD_EXERCISES = ['Bulgarian split squat','Patrick step-up','Single-leg sit-to-stand','Step-down','Single-leg squat','Wall sit'];
+
+function isHighLoad(text){
+  return HIGH_LOAD_EXERCISES.some(k => text.toLowerCase().includes(k.toLowerCase()));
+}
+
+function dayTotalMin(day){
+  return day.ex.reduce((s,e)=>s+e.m, 0);
+}
+
+function setScale(dayIdx, mode){
+  if(!state.scale) state.scale = {};
+  state.scale[dayIdx] = (state.scale[dayIdx]===mode) ? 'standard' : mode;
+  saveState();
+  render();
+}
+
+function renderDayCard(i, compact){
+  const day = PLAN[i];
+  const date = dateForDay(i);
+  const dow = fmtDow(date);
+  const dnum = fmtDate(date);
+  if(!state.scale) state.scale = {};
+  const scale = state.scale[i] || 'standard';
+  const totalMin = Math.round(dayTotalMin(day));
+
+  let exHtml = day.ex.map((e,exIdx)=>{
+    const key = i+'-'+exIdx;
+    const checked = !!state.checks[key];
+    const highLoad = isHighLoad(e.t);
+    if(scale==='skip' && highLoad){
+      return `<div class="ex-row" style="opacity:0.4;">
+        <div class="ex-check" style="border-color:var(--line);"></div>
+        <div class="ex-text" style="text-decoration:line-through;">${e.t} <span style="color:var(--tape); font-family:var(--mono); font-size:11px;">(skip — flare)</span></div>
+      </div>`;
+    }
+    if(scale==='easy' && highLoad){
+      return `<div class="ex-row">
+        <div class="ex-check ${checked?'checked':''}" onclick="toggleCheck(${i},${exIdx})"></div>
+        <div class="ex-text ${checked?'checked':''}">${e.t} <span style="color:var(--amber); font-family:var(--mono); font-size:11px;">(reduce range ~30%, cut a set)</span></div>
+      </div>`;
+    }
+    return `<div class="ex-row">
+      <div class="ex-check ${checked?'checked':''}" onclick="toggleCheck(${i},${exIdx})"></div>
+      <div class="ex-text ${checked?'checked':''}">${e.t}</div>
+    </div>`;
+  }).join('');
+
+  const pain = state.pain[i];
+  const painRow = [0,2,4,6,8,10].map(v=>{
+    const sel = pain===v ? painClass(v) : '';
+    return `<div class="pain-btn ${sel}" onclick="setPain(${i},${v})">${v}</div>`;
+  }).join('');
+
+  const note = day.note ? `<div class="note-box">${day.note}</div>` : '';
+  const cardio = day.cardio ? `<div class="note-box" style="color:var(--chalk-dim);">Cardio (separate from session time): ${day.cardio}</div>` : '';
+
+  const highLoadItems = day.ex.filter(e=>isHighLoad(e.t));
+  const itemList = highLoadItems.map(e=>e.t.split(' — ')[0].split('(')[0].trim()).join(', ');
+  const easyBanner = scale==='easy'
+    ? `<div class="easy-banner"><b>Easy mode on.</b> ${highLoadItems.length} of ${day.ex.length} items adjusted — reduced ~30% range, one set lighter: <i>${itemList||'none today'}</i>. Everything else (mobility, coach work) stays as written since it's low-risk regardless. Recheck tomorrow before going back to standard.</div>`
+    : scale==='skip'
+    ? `<div class="easy-banner" style="border-color:var(--tape); background:#3a231c;"><b>Flare mode on.</b> ${highLoadItems.length} of ${day.ex.length} items skipped today: <i>${itemList||'none today'}</i>. Everything else (mobility, coach work) still happens — it's low-risk and helps even on a flare day. Don't progress depth/load again until you've had a pain-free day at the previous level.</div>`
+    : '';
+
+  return `<div class="card ${scale!=='standard'?'adjusted':''}">
+    <div class="card-head">
+      <div>
+        <h2>Week ${weekOf(i)} · Day ${(i%7)+1}</h2>
+        <div class="sub" style="margin-top:2px;">${dow} ${dnum}</div>
+      </div>
+      <div style="text-align:right;">
+        <span class="badge ${day.type.split('-')[0]}">${TYPE_LABEL[day.type]}</span>
+        <div class="sub" style="margin-top:5px; font-family:var(--mono);">~${totalMin} min</div>
+      </div>
+    </div>
+    <label class="field-label">Feeling sore or flared today?</label>
+    <div class="scale-bar">
+      <div class="scale-btn ${scale==='standard'?'active-easy':''}" style="${scale==='standard'?'background:var(--turf);border-color:var(--turf);color:#142016;':''}" onclick="setScale(${i},'standard')">Standard</div>
+      <div class="scale-btn ${scale==='easy'?'active-easy':''}" onclick="setScale(${i},'easy')">Scale Back</div>
+      <div class="scale-btn ${scale==='skip'?'active-skip':''}" onclick="setScale(${i},'skip')">Flare — Skip Load</div>
+    </div>
+    ${easyBanner}
+    ${exHtml}
+    ${note}
+    ${cardio}
+    <div style="margin-top:14px;">
+      <label class="field-label">Symptom level today (0–10)</label>
+      <div class="pain-row">${painRow}</div>
+      <label class="field-label">Notes</label>
+      <textarea rows="2" placeholder="Anything notable — location, what provoked it, how it felt..." oninput="setNote(${i}, this.value)">${state.notes[i]||''}</textarea>
+    </div>
+  </div>`;
+}
+
+function flareBanner(i){
+  const p = state.pain[i];
+  if(p===undefined) return '';
+
+  // Look back across the last 5 logged days (not just yesterday) for a pattern.
+  let recent = [];
+  for(let j=i; j>=0 && recent.length<5; j--){
+    if(state.pain[j]!==undefined) recent.push(state.pain[j]);
+  }
+  const highCount = recent.filter(v=>v>=6).length;
+
+  if(p>=7){
+    return `<div class="flare-banner"><b>Flare signal.</b> Symptoms logged at ${p}/10 today. Consider switching to "Scale Back" or "Flare — Skip Load" below rather than progressing, and recheck in 24h.</div>`;
+  }
+  if(highCount>=2){
+    return `<div class="flare-banner"><b>Pattern signal.</b> ${highCount} of your last ${recent.length} logged days were 6+/10. This looks like more than a one-off — worth scaling back the next couple of load days and considering whether the in-person PT eval should move up.</div>`;
+  }
+  return '';
+}
+
+function renderToday(){
+  const i = currentDay;
+  return `
+    <div class="day-strip" id="dayStrip"></div>
+    ${flareBanner(i)}
+    ${renderSessionComplete(i)}
+    ${renderDayCard(i)}
+  `;
+}
+
+function renderSessionComplete(i){
+  const day = PLAN[i];
+  const doneCount = day.ex.filter((e,idx)=>state.checks[i+'-'+idx]).length;
+  if(doneCount < day.ex.length) return '';
+  const pain = state.pain[i];
+  return `<div class="card" style="border-color:var(--turf);">
+    <div class="card-head"><h2>Session Complete</h2></div>
+    <div class="ex-text" style="margin-bottom:10px;">All items checked for today.${pain===undefined?' Log your symptom level below, then copy your entry to keep a record.':''}</div>
+    <button class="btn" onclick="copyTodaySummary()">Copy Today's Entry → Paste in Chat</button>
+  </div>`;
+}
+
+function renderBackupCard(){
+  return `<div class="card">
+    <div class="card-head"><h2>Move Data to Another Device</h2></div>
+    <div class="ex-text" style="margin-bottom:10px;">Progress is saved automatically on this device. To copy it to a different phone/browser, export a code here and import it there.</div>
+    <button class="btn secondary small" onclick="exportState()" style="margin-bottom:8px;">Export Save Code</button>
+    <textarea id="exportOut" readonly rows="2" style="display:none; font-family:var(--mono); font-size:11px;" placeholder="Save code will appear here"></textarea>
+    <label class="field-label" style="margin-top:10px;">Restore from a save code</label>
+    <textarea id="importIn" rows="2" placeholder="Paste a previously exported save code here"></textarea>
+    <button class="btn secondary small" onclick="importState()">Restore</button>
+  </div>`;
+}
+
+function renderDayStrip(){
+  const strip = document.getElementById('dayStrip');
+  if(!strip) return;
+  let html = '';
+  for(let i=0;i<28;i++){
+    const date = dateForDay(i);
+    const day = PLAN[i];
+    const exCount = day.ex.length;
+    let doneCount = 0;
+    for(let e=0;e<exCount;e++) if(state.checks[i+'-'+e]) doneCount++;
+    const isDone = doneCount===exCount;
+    const isActive = i===currentDay;
+    const isRecheck = day.type==='recheck';
+    html += `<div class="day-chip ${isActive?'active':''} ${isDone?'done':''} ${isRecheck?'recheck':''}" onclick="selectDay(${i})">
+      <div class="d">${fmtDow(date)[0]}</div>
+      <div class="n">${(i%7)+1}</div>
+    </div>`;
+  }
+  strip.innerHTML = html;
+}
+
+function selectDay(i){
+  currentDay = i;
+  render();
+}
+
+function renderPlan(){
+  let html = '';
+  for(let w=0; w<4; w++){
+    html += `<div class="card"><div class="card-head"><h2>Week ${w+1}</h2></div>`;
+    for(let d=0; d<7; d++){
+      const i = w*7+d;
+      const date = dateForDay(i);
+      const day = PLAN[i];
+      const totalMin = Math.round(dayTotalMin(day));
+      html += `<div class="ex-row" style="cursor:pointer;" onclick="selectDay(${i}); switchView('today');">
+        <span class="badge ${day.type.split('-')[0]}" style="margin-top:1px;">${TYPE_LABEL[day.type]}</span>
+        <div class="ex-text">Day ${d+1} — ${fmtDate(date)} · ${day.ex.length} items · <span style="color:var(--chalk-dim); font-family:var(--mono);">~${totalMin} min</span></div>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+  return html;
+}
+
+function renderLog(){
+  let entries = [];
+  for(let i=0;i<28;i++){
+    if(state.pain[i]!==undefined || (state.notes[i] && state.notes[i].trim())){
+      entries.push({i, date:dateForDay(i), pain:state.pain[i], note:state.notes[i]});
+    }
+  }
+  entries.sort((a,b)=>b.i-a.i);
+
+  let quick = state.quickLogs.slice().reverse().map(q=>{
+    return `<div class="log-entry">
+      <div class="meta"><span>${q.date}</span><span style="color:${q.pain>=7?'var(--tape)':q.pain>=4?'var(--amber)':'var(--turf)'}">PAIN ${q.pain}</span></div>
+      <div>${q.text}</div>
+    </div>`;
+  }).join('');
+
+  let planEntries = entries.map(e=>{
+    const p = e.pain;
+    const color = p>=7?'var(--tape)':p>=4?'var(--amber)':'var(--turf)';
+    return `<div class="log-entry">
+      <div class="meta"><span>Week ${weekOf(e.i)} Day ${(e.i%7)+1} — ${fmtDate(e.date)}</span>${p!==undefined?`<span style="color:${color}">PAIN ${p}</span>`:''}</div>
+      ${e.note ? `<div>${e.note}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  return `
+    <div class="card">
+      <div class="card-head"><h2>Quick Log</h2></div>
+      <label class="field-label">Off-plan note (anything you want to flag — a twinge, a stair flare, a good day)</label>
+      <textarea id="quickText" rows="2" placeholder="e.g. knee tight going downstairs after sitting at desk"></textarea>
+      <label class="field-label">Symptom level (0–10)</label>
+      <div class="pain-row" id="quickPainRow"></div>
+      <button class="btn" onclick="submitQuickLog()">Add Entry</button>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>History</h2></div>
+      ${(quick+planEntries) || '<div class="empty-state">No entries yet. Logs from Today and Quick Log will appear here.</div>'}
+    </div>
+  `;
+}
+
+let quickPainVal = null;
+function selectQuickPain(v){
+  quickPainVal = v;
+  renderQuickPainRow();
+}
+function renderQuickPainRow(){
+  const row = document.getElementById('quickPainRow');
+  if(!row) return;
+  row.innerHTML = [0,2,4,6,8,10].map(v=>{
+    const sel = quickPainVal===v ? painClass(v) : '';
+    return `<div class="pain-btn ${sel}" onclick="selectQuickPain(${v})">${v}</div>`;
+  }).join('');
+}
+function submitQuickLog(){
+  const text = document.getElementById('quickText').value.trim();
+  if(!text && quickPainVal===null) return;
+  state.quickLogs.push({date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}), text: text||'(no note)', pain: quickPainVal===null?'-':quickPainVal});
+  quickPainVal = null;
+  saveState();
+  render();
+}
+
+function renderProgress(){
+  let painPoints = [];
+  for(let i=0;i<28;i++){
+    if(state.pain[i]!==undefined) painPoints.push({i, v:state.pain[i]});
+  }
+  const completedDays = Object.keys(state.checks).filter(k=>state.checks[k]).length;
+  const totalEx = PLAN.reduce((s,d)=>s+d.ex.length,0);
+  const lastRom = state.romLog[state.romLog.length-1];
+
+  let html = `
+    <div class="stat-grid">
+      <div class="stat"><div class="v">${painPoints.length}</div><div class="l">Days Logged</div></div>
+      <div class="stat"><div class="v">${completedDays}</div><div class="l">Items Checked</div></div>
+      <div class="stat"><div class="v">${lastRom? lastRom.right+'"' : '3.0"'}</div><div class="l">Right Ankle ROM</div></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Symptom Trend</h2></div>
+      <div class="chart-wrap"><canvas id="painChart" height="120"></canvas></div>
+      <div class="sub" style="margin-top:8px;">0 = no symptoms · 10 = severe</div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Ankle Knee-to-Wall (inches)</h2></div>
+      <div class="rom-row">
+        <div><label class="field-label">Left</label><input type="number" step="0.25" id="romLeft" placeholder="4.25"></div>
+        <div><label class="field-label">Right</label><input type="number" step="0.25" id="romRight" placeholder="3.0"></div>
+      </div>
+      <button class="btn secondary small" onclick="submitRom()">Log Measurement</button>
+      <div style="margin-top:14px;">
+        ${state.romLog.length ? state.romLog.slice().reverse().map(r=>`<div class="log-entry"><div class="meta"><span>${r.date}</span><span style="font-family:var(--mono)">L ${r.left}" · R ${r.right}"</span></div></div>`).join('') : '<div class="empty-state">No measurements logged yet. Baseline: Left 4.25" · Right 3.0"</div>'}
+      </div>
+    </div>
+    ${renderBackupCard()}
+  `;
+  return html;
+}
+
+function submitRom(){
+  const left = document.getElementById('romLeft').value;
+  const right = document.getElementById('romRight').value;
+  if(!left || !right) return;
+  state.romLog.push({date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}), left, right});
+  saveState();
+  render();
+}
+
+function drawPainChart(){
+  const canvas = document.getElementById('painChart');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.clientWidth; const h = 120;
+  canvas.width = w * devicePixelRatio; canvas.height = h * devicePixelRatio;
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  ctx.clearRect(0,0,w,h);
+
+  let points = [];
+  for(let i=0;i<28;i++) if(state.pain[i]!==undefined) points.push({i, v:state.pain[i]});
+  if(points.length<1){
+    ctx.fillStyle = '#6b7a72'; ctx.font='12px sans-serif';
+    ctx.fillText('Log symptom levels on Today to see the trend.', 10, h/2);
+    return;
+  }
+  const pad = 14;
+  const xStep = (w - pad*2) / 27;
+  const yFor = v => h - pad - (v/10)*(h-pad*2);
+
+  // grid
+  ctx.strokeStyle = '#3a4a42'; ctx.lineWidth=1;
+  [0,5,10].forEach(v=>{
+    ctx.beginPath(); ctx.moveTo(pad, yFor(v)); ctx.lineTo(w-pad, yFor(v)); ctx.stroke();
+  });
+
+  ctx.strokeStyle = '#d9542c'; ctx.lineWidth=2; ctx.beginPath();
+  points.forEach((p,idx)=>{
+    const x = pad + p.i*xStep; const y = yFor(p.v);
+    if(idx===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  points.forEach(p=>{
+    const x = pad + p.i*xStep; const y = yFor(p.v);
+    ctx.fillStyle = p.v>=7?'#d9542c':p.v>=4?'#d6a13c':'#6f9c5e';
+    ctx.beginPath(); ctx.arc(x,y,3,0,7); ctx.fill();
+  });
+}
+
+const MILESTONES = {
+  running: [
+    'Single-leg sit-to-stand pain-free (≤2/10) for 10+ reps',
+    'Step-down to 80–90% of full range without pain',
+    'Ankle dorsiflexion asymmetry under ~15% side-to-side',
+    'No morning-after soreness following 2 consecutive rehab days'
+  ],
+  leg: [
+    'Single-leg squat to ~60° without pain or compensation',
+    'Step-down through close-to-full range with good control, no pain'
+  ],
+  hills: [
+    'Tolerates flat sprinting progressively without delayed flare',
+    'Tolerates brisk incline walking, then jogging, before sprinting',
+    'Ankle dorsiflexion near-symmetrical',
+    'No symptom increase 24–48h after a hill-specific session'
+  ]
+};
+let milestoneState = {};
+function toggleMilestone(group, idx){
+  const key = group+'-'+idx;
+  milestoneState[key] = !milestoneState[key];
+  state.milestones = milestoneState;
+  saveState();
+  render();
+}
+function renderMilestones(){
+  if(state.milestones) milestoneState = state.milestones;
+  const section = (title, group, items)=>{
+    return `<div class="card">
+      <div class="card-head"><h2>Before: ${title}</h2></div>
+      ${items.map((m,idx)=>{
+        const key = group+'-'+idx;
+        const met = !!milestoneState[key];
+        return `<div class="milestone" onclick="toggleMilestone('${group}',${idx})" style="cursor:pointer;">
+          <div class="dot ${met?'met':''}"></div>
+          <div style="${met?'color:var(--chalk-dim); text-decoration:line-through;':''}">${m}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  };
+  return section('Running','running',MILESTONES.running)
+       + section('Leg Training','leg',MILESTONES.leg)
+       + section('Hill Sprints','hills',MILESTONES.hills)
+       + `<div class="card"><div class="card-head"><h2>In-Person Eval</h2></div>
+          <div class="ex-text">Get a sports medicine PT eval if: no meaningful improvement after 6–8 weeks of appropriately dosed rehab, new mechanical symptoms appear (locking, catching, swelling, instability), pain becomes constant or occurs at rest/night, or you plateau on step-down depth / single-leg load despite consistency. Given the multi-year history here, an eval around Week 2–3 of this block is worth prioritizing rather than waiting.</div>
+        </div>`;
+}
+
+function switchView(v){
+  currentView = v;
+  render();
+}
+
+function render(){
+  document.getElementById('todayLabel').textContent = `WK ${weekOf(currentDay)} · D${(currentDay%7)+1}`;
+  document.querySelectorAll('.tape-tab').forEach(t=>{
+    t.classList.toggle('active', t.dataset.view===currentView);
+  });
+  const app = document.getElementById('app');
+  if(currentView==='today') app.innerHTML = renderToday();
+  else if(currentView==='plan') app.innerHTML = renderPlan();
+  else if(currentView==='log') app.innerHTML = renderLog();
+  else if(currentView==='progress') app.innerHTML = renderProgress();
+  else if(currentView==='milestones') app.innerHTML = renderMilestones();
+
+  if(currentView==='today') renderDayStrip();
+  if(currentView==='log') renderQuickPainRow();
+  if(currentView==='progress') drawPainChart();
+}
+
+document.querySelectorAll('.tape-tab').forEach(t=>{
+  t.addEventListener('click', ()=>switchView(t.dataset.view));
+});
+
+loadState();
+</script>
+</body>
+</html>
